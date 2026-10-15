@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chumba Bila Dalali</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f6f7f4;--card:#fff;--tx:#1b2a22;--mu:#5d6b63;--pr:#1f7a4d;--pr2:#e3f2ea;--bd:#dfe4de;--wn:#b45309}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121815;--card:#1a231e;--tx:#e8efe9;--mu:#9fb0a5;--pr:#3fb97c;--pr2:#1d3328;--bd:#2a362f;--wn:#f0a35a}}
+:root[data-theme="dark"]{--bg:#121815;--card:#1a231e;--tx:#e8efe9;--mu:#9fb0a5;--pr:#3fb97c;--pr2:#1d3328;--bd:#2a362f;--wn:#f0a35a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*:before,*:after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.45}
+.wrap{max-width:720px;margin:0 auto;padding:16px}
+h1{font-size:1.4rem;margin:8px 0 2px}
+.sub{color:var(--mu);margin:0 0 14px;font-size:.95rem}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tab{flex:1;padding:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font-size:1rem;cursor:pointer}
+.tab.on{background:var(--pr);color:#fff;border-color:var(--pr)}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.filters input:first-child{grid-column:1/-1}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+label{display:block;font-size:.9rem;color:var(--mu);margin:10px 0 4px}
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.price{font-weight:700;color:var(--pr);white-space:nowrap}
+.loc{font-weight:600;font-size:1.05rem}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{font-size:.8rem;background:var(--pr2);color:var(--pr);padding:2px 8px;border-radius:99px}
+.desc{color:var(--mu);font-size:.92rem;margin:4px 0 10px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{display:inline-block;padding:9px 14px;border-radius:8px;border:1px solid var(--pr);background:var(--pr);color:#fff;text-decoration:none;font-size:.95rem;cursor:pointer}
+.btn.alt{background:transparent;color:var(--pr)}
+.btn.warn{background:transparent;color:var(--wn);border-color:var(--wn)}
+.btn:disabled{opacity:.6;cursor:wait}
+.taken{opacity:.55}
+.tag{font-size:.75rem;color:var(--wn);border:1px solid var(--wn);border-radius:6px;padding:1px 6px}
+.checks{display:flex;flex-wrap:wrap;gap:12px}
+.checks label{display:flex;align-items:center;gap:6px;margin:0;color:var(--tx)}
+.checks input{width:auto}
+.empty{text-align:center;color:var(--mu);padding:24px}
+.note{font-size:.8rem;color:var(--mu);margin-top:18px}
+.gal{display:flex;gap:8px;overflow-x:auto;margin:10px 0}
+.gal img,.gal video{height:150px;max-width:80vw;border-radius:8px;flex:none;object-fit:cover;background:var(--pr2)}
+.gal img{cursor:zoom-in}
+.pv{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.th{position:relative;width:84px;height:84px}
+.th img,.th video{width:100%;height:100%;object-fit:cover;border-radius:8px}
+.th button{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:0;background:var(--wn);color:#fff;cursor:pointer;line-height:1}
+.hint{font-size:.8rem;color:var(--mu);margin:4px 0 0}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:9;cursor:zoom-out}
+#lb img{max-width:96vw;max-height:92vh}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🏠 Chumba Bila Dalali</h1>
+  <p class="sub">Tafuta chumba cha kupanga moja kwa moja kwa mwenye nyumba.</p>
+
+  <div class="tabs">
+    <button class="tab on" id="tabFind" type="button">Tafuta chumba</button>
+    <button class="tab" id="tabAdd" type="button">Weka tangazo</button>
+  </div>
+
+  <section id="viewFind">
+    <div class="box filters">
+      <input id="fq" type="search" placeholder="Tafuta eneo (mf. Area D, Makulu)">
+      <select id="ft">
+        <option value="">Aina zote</option>
+        <option>Chumba kimoja</option>
+        <option>Chumba na sebule</option>
+        <option>Nyumba nzima</option>
+      </select>
+      <input id="fp" type="number" min="0" step="1000" placeholder="Bei ya juu (TSh/mwezi)">
+    </div>
+    <div id="list"></div>
+  </section>
+
+  <section id="viewAdd" hidden>
+    <form id="form" class="box">
+      <label for="a_loc">Eneo / mtaa *</label>
+      <input id="a_loc" required maxlength="80" placeholder="mf. Area D, Dodoma">
+      <label for="a_type">Aina ya chumba *</label>
+      <select id="a_type" required>
+        <option>Chumba kimoja</option>
+        <option>Chumba na sebule</option>
+        <option>Nyumba nzima</option>
+      </select>
+      <label for="a_price">Kodi kwa mwezi (TSh) *</label>
+      <input id="a_price" type="number" min="1000" max="100000000" step="1000" required placeholder="mf. 80000">
+      <label for="a_phone">Namba ya simu *</label>
+      <input id="a_phone" type="tel" required placeholder="mf. 0712 345 678">
+      <label>Huduma zilizopo</label>
+      <div class="checks" id="a_feat">
+        <label><input type="checkbox" value="Maji"> Maji</label>
+        <label><input type="checkbox" value="Umeme"> Umeme</label>
+        <label><input type="checkbox" value="Choo cha ndani"> Choo cha ndani</label>
+        <label><input type="checkbox" value="Uzio"> Uzio</label>
+      </div>
+      <label for="a_desc">Maelezo mengine</label>
+      <textarea id="a_desc" rows="3" maxlength="500" placeholder="mf. Kodi ya miezi 3 mbele. Karibu na barabara kuu."></textarea>
+
+      <label>Picha / Video</label>
+      <button class="btn alt" type="button" id="pickBtn">📷 Pakia picha au video</button>
+      <input id="a_media" type="file" accept="image/*,video/*" multiple hidden>
+      <div class="pv" id="pv"></div>
+      <p class="hint" id="mediaHint"></p>
+
+      <p><button class="btn" type="submit" id="sendBtn">Weka tangazo</button></p>
+    </form>
+  </section>
+
+  <p class="note" id="note">Inapakia matangazo...</p>
+</div>
+<div id="lb" hidden><img alt=""></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAtaZtwsfGuiNZtZbF6oYoR13C_9jwvyn4",
+  authDomain: "chumba-bila-dalali.firebaseapp.com",
+  projectId: "chumba-bila-dalali",
+  appId: "1:644882532495:web:dda0d1ab7c79e3e47508fa"
+};
+
+// Kupakia VIDEO (na picha kubwa) bila kadi ya benki: tumia Cloudinary (bure).
+// Jaza cloud name na unsigned upload preset. Ukiziacha tupu: picha tu (hadi 3) zinahifadhiwa kwenye Firestore.
+const CLD = { cloud: "", preset: "" };
+const useCloud = !!(CLD.cloud && CLD.preset);
+const MAX_FILES = useCloud ? 5 : 3, MAX_VIDEO_MB = 40, MAX_IMG_MB = 15;
+
+const $ = id => document.getElementById(id);
+const note = t => { $('note').textContent = t; };
+let items = [], uid = null, db = null, picked = [];
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function normPhone(p){
+  let d = String(p).replace(/\D/g,'');
+  if (d.startsWith('0')) d = '255' + d.slice(1);
+  else if (d.length === 9) d = '255' + d;
+  return d;
+}
+const fmt = n => 'TSh ' + Number(n).toLocaleString('en-US') + '/mwezi';
+function ago(t){ const d = Math.max(0, Math.floor((Date.now() - t) / 86400000)); return d === 0 ? 'leo' : d === 1 ? 'jana' : 'siku ' + d + ' zilizopita'; }
+const okMedia = u => /^(data:image\/jpeg;base64,|https:\/\/res\.cloudinary\.com\/)/.test(u || '');
+
+function render(){
+  const q = $('fq').value.trim().toLowerCase(), t = $('ft').value, p = Number($('fp').value) || 0;
+  const res = items.filter(i => (!q || (i.loc || '').toLowerCase().includes(q)) && (!t || i.type === t) && (!p || i.price <= p))
+    .sort((a,b) => (Number(!!a.taken) - Number(!!b.taken)) || ((b.date || 0) - (a.date || 0)));
+  const el = $('list');
+  if (!res.length){ el.innerHTML = '<div class="empty">Hakuna chumba kilichopatikana.</div>'; return; }
+  el.innerHTML = res.map(i => {
+    const mine = uid && i.ownerId === uid;
+    const msg = encodeURIComponent('Habari, nimeona tangazo lako la ' + i.type + ' ' + i.loc + '. Bado lipo?');
+    const media = (i.media || []).filter(m => okMedia(m.u)).map(m => m.t === 'video'
+      ? `<video src="${esc(m.u)}" controls preload="metadata" playsinline></video>`
+      : `<img src="${esc(m.u)}" loading="lazy" alt="Picha ya chumba" data-zoom>`).join('');
+    return `<div class="box ${i.taken ? 'taken' : ''}">
+      <div class="row"><div><div class="loc">${esc(i.loc)}</div><div class="sub" style="margin:0">${esc(i.type)} · ${ago(i.date)}</div></div>
+      <div class="price">${fmt(i.price)}</div></div>
+      ${media ? '<div class="gal">' + media + '</div>' : ''}
+      <div class="chips">${(i.feat||[]).map(f => '<span class="chip">' + esc(f) + '</span>').join('')}${i.taken ? '<span class="tag">Kimechukuliwa</span>' : ''}</div>
+      ${i.desc ? '<div class="desc">' + esc(i.desc) + '</div>' : ''}
+      <div class="btns">
+        ${i.taken ? '' : `<a class="btn" href="tel:+${esc(i.phone)}">📞 Piga simu</a>
+        <a class="btn alt" href="https://wa.me/${esc(i.phone)}?text=${msg}" target="_blank" rel="noopener">WhatsApp</a>`}
+        ${mine ? `<button class="btn warn" type="button" data-act="taken" data-id="${esc(i.id)}">${i.taken ? 'Kirudishe' : 'Kimechukuliwa'}</button>
+        <button class="btn warn" type="button" data-act="del" data-id="${esc(i.id)}">Futa</button>` : ''}
+      </div></div>`;
+  }).join('');
+}
+
+function setTab(t){
+  $('viewFind').hidden = t !== 'find'; $('viewAdd').hidden = t !== 'add';
+  $('tabFind').classList.toggle('on', t === 'find'); $('tabAdd').classList.toggle('on', t === 'add');
+}
+$('tabFind').onclick = () => setTab('find');
+$('tabAdd').onclick = () => setTab('add');
+['fq','ft','fp'].forEach(id => $(id).addEventListener('input', render));
+
+$('mediaHint').textContent = useCloud
+  ? `Hadi faili ${MAX_FILES} (video 1 tu, hadi ${MAX_VIDEO_MB}MB).`
+  : `Picha hadi ${MAX_FILES} (zinapunguzwa ukubwa kiotomatiki). Video bado haijawashwa.`;
+
+// ---- Media ----
+$('pickBtn').onclick = () => $('a_media').click();
+$('a_media').addEventListener('change', e => {
+  for (const f of e.target.files){
+    const vid = f.type.startsWith('video/'), img = f.type.startsWith('image/');
+    if (!vid && !img) continue;
+    if (vid && !useCloud){ alert('Video inahitaji Cloudinary kuwashwa kwenye msimbo. Weka picha kwa sasa.'); continue; }
+    if (vid && picked.some(x => x.type.startsWith('video/'))){ alert('Video moja tu inaruhusiwa.'); continue; }
+    if (vid && f.size > MAX_VIDEO_MB * 1048576){ alert('Video ni kubwa kuliko ' + MAX_VIDEO_MB + 'MB.'); continue; }
+    if (img && f.size > MAX_IMG_MB * 1048576){ alert('Picha ni kubwa kuliko ' + MAX_IMG_MB + 'MB.'); continue; }
+    if (picked.length >= MAX_FILES){ alert('Umefikia kikomo cha faili ' + MAX_FILES + '.'); break; }
+    picked.push(f);
+  }
+  e.target.value = ''; preview();
+});
+function preview(){
+  $('pv').innerHTML = picked.map((f, i) => {
+    const u = URL.createObjectURL(f);
+    return `<div class="th">${f.type.startsWith('video/') ? `<video src="${u}" muted></video>` : `<img src="${u}" alt="">`}<button type="button" data-rm="${i}" aria-label="Ondoa">×</button></div>`;
+  }).join('');
+}
+$('pv').addEventListener('click', e => {
+  const b = e.target.closest('[data-rm]'); if (!b) return;
+  picked.splice(Number(b.dataset.rm), 1); preview();
+});
+function shrink(file, max = 900, q = .72){
+  return new Promise((res, rej) => {
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(u); res(c.toDataURL('image/jpeg', q));
+    };
+    img.onerror = () => { URL.revokeObjectURL(u); rej(new Error('img')); };
+    img.src = u;
+  });
+}
+async function cloudUpload(file){
+  const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', CLD.preset);
+  const r = await fetch(`https://api.cloudinary.com/v1_1/${CLD.cloud}/auto/upload`, { method: 'POST', body: fd });
+  if (!r.ok) throw new Error('upload');
+  const j = await r.json();
+  return { t: j.resource_type === 'video' ? 'video' : 'image', u: j.secure_url };
+}
+async function buildMedia(){
+  const out = [];
+  for (const f of picked){
+    if (useCloud) out.push(await cloudUpload(f));
+    else out.push({ t: 'image', u: await shrink(f) });
+  }
+  return out;
+}
+
+// ---- Listing actions ----
+$('list').addEventListener('click', async e => {
+  const z = e.target.closest('img[data-zoom]');
+  if (z){ $('lb').querySelector('img').src = z.src; $('lb').hidden = false; return; }
+  const b = e.target.closest('button[data-act]'); if (!b || !db) return;
+  const i = items.find(x => x.id === b.dataset.id); if (!i) return;
+  try {
+    if (b.dataset.act === 'del'){ if (!confirm('Futa tangazo hili?')) return; await deleteDoc(doc(db, 'listings', i.id)); }
+    else await updateDoc(doc(db, 'listings', i.id), { taken: !i.taken });
+  } catch (err) { alert('Imeshindikana. Jaribu tena.'); }
+});
+$('lb').onclick = () => { $('lb').hidden = true; };
+
+$('form').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!db || !uid){ alert('Subiri kidogo, bado inaunganisha...'); return; }
+  const phone = normPhone($('a_phone').value);
+  if (phone.length !== 12){ alert('Weka namba sahihi ya simu, mf. 0712 345 678'); return; }
+  const btn = $('sendBtn'); btn.disabled = true; btn.textContent = picked.length ? 'Inapakia faili...' : 'Inatuma...';
+  try {
+    const media = await buildMedia();
+    await addDoc(collection(db, 'listings'), {
+      loc: $('a_loc').value.trim(), type: $('a_type').value, price: Number($('a_price').value),
+      phone, feat: [...document.querySelectorAll('#a_feat input:checked')].map(c => c.value),
+      desc: $('a_desc').value.trim(), media, date: Date.now(), taken: false, ownerId: uid
+    });
+    e.target.reset(); picked = []; preview(); setTab('find'); window.scrollTo(0, 0);
+  } catch (err) {
+    alert('Imeshindikana kuweka tangazo. Angalia mtandao au ukubwa wa faili, kisha jaribu tena.');
+  } finally { btn.disabled = false; btn.textContent = 'Weka tangazo'; }
+});
+
+// ---- Firebase ----
+try {
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  db = getFirestore(app);
+  onAuthStateChanged(auth, u => {
+    if (u){ uid = u.uid; render(); }
+    else signInAnonymously(auth).catch(() => note('Imeshindikana kuingia. Washa "Anonymous" kwenye Firebase Authentication.'));
+  });
+  onSnapshot(query(collection(db, 'listings'), orderBy('date', 'desc')), snap => {
+    items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    note(items.length + ' matangazo. Yanaonekana kwa kila mtumiaji.');
+    render();
+  }, () => note('Imeshindikana kusoma matangazo. Angalia Firestore rules na config.'));
+} catch (err) {
+  note('Hitilafu ya kuanzisha Firebase. Angalia firebaseConfig.');
+}
+render();
+</script>
+</body>
+</html>
