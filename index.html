@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Chumba Bila Dalali</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f7a4d">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f6f7f4;--card:#fff;--tx:#1b2a22;--mu:#5d6b63;--pr:#1f7a4d;--pr2:#e3f2ea;--bd:#dfe4de;--wn:#b45309}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121815;--card:#1a231e;--tx:#e8efe9;--mu:#9fb0a5;--pr:#3fb97c;--pr2:#1d3328;--bd:#2a362f;--wn:#f0a35a}}
@@ -50,6 +54,10 @@ label{display:block;font-size:.9rem;color:var(--mu);margin:10px 0 4px}
 .hint{font-size:.8rem;color:var(--mu);margin:4px 0 0}
 #lb{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:9;cursor:zoom-out}
 #lb img{max-width:96vw;max-height:92vh}
+.rep{background:none;border:0;color:var(--mu);font-size:.8rem;text-decoration:underline;padding:6px 4px;cursor:pointer;margin-left:auto}
+dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);width:min(92vw,420px);padding:16px}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog h2{font-size:1.1rem;margin:0 0 4px}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -113,12 +121,31 @@ label{display:block;font-size:.9rem;color:var(--mu);margin:10px 0 4px}
 
   <p class="note" id="note">Inapakia matangazo...</p>
 </div>
+<dialog id="rpd">
+  <form id="rpForm">
+    <h2>🚩 Ripoti tangazo</h2>
+    <p class="sub" style="margin:0 0 6px">Tuambie tatizo ni nini. Ripoti inatufikia sisi tu.</p>
+    <label for="rp_why">Sababu *</label>
+    <select id="rp_why" required>
+      <option value="">Chagua sababu...</option>
+      <option>Tangazo la uongo / utapeli</option>
+      <option>Chumba kimeshachukuliwa</option>
+      <option>Bei au maelezo si sahihi</option>
+      <option>Picha au video zisizofaa</option>
+      <option>Tangazo limerudiwa</option>
+      <option>Nyingine</option>
+    </select>
+    <label for="rp_note">Maelezo (hiari)</label>
+    <textarea id="rp_note" rows="3" maxlength="300"></textarea>
+    <p class="btns"><button class="btn" type="submit" id="rp_send">Tuma ripoti</button><button class="btn alt" type="button" id="rp_cancel">Ghairi</button></p>
+  </form>
+</dialog>
 <div id="lb" hidden><img alt=""></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAtaZtwsfGuiNZtZbF6oYoR13C_9jwvyn4",
@@ -135,7 +162,7 @@ const MAX_FILES = useCloud ? 5 : 3, MAX_VIDEO_MB = 40, MAX_IMG_MB = 15;
 
 const $ = id => document.getElementById(id);
 const note = t => { $('note').textContent = t; };
-let items = [], uid = null, db = null, picked = [];
+let items = [], uid = null, db = null, picked = [], repId = null;
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function normPhone(p){
@@ -169,6 +196,7 @@ function render(){
       <div class="btns">
         ${i.taken ? '' : `<a class="btn" href="tel:+${esc(i.phone)}">📞 Piga simu</a>
         <a class="btn alt" href="https://wa.me/${esc(i.phone)}?text=${msg}" target="_blank" rel="noopener">WhatsApp</a>`}
+        ${!mine ? `<button class="rep" type="button" data-rep="${esc(i.id)}">🚩 Ripoti tangazo</button>` : ''}
         ${mine ? `<button class="btn warn" type="button" data-act="taken" data-id="${esc(i.id)}">${i.taken ? 'Kirudishe' : 'Kimechukuliwa'}</button>
         <button class="btn warn" type="button" data-act="del" data-id="${esc(i.id)}">Futa</button>` : ''}
       </div></div>`;
@@ -228,8 +256,8 @@ function shrink(file, max = 900, q = .72){
 async function cloudUpload(file){
   const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', CLD.preset);
   const r = await fetch(`https://api.cloudinary.com/v1_1/${CLD.cloud}/auto/upload`, { method: 'POST', body: fd });
-  if (!r.ok) throw new Error('upload');
-  const j = await r.json();
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error('Cloudinary: ' + ((j.error && j.error.message) || r.status));
   return { t: j.resource_type === 'video' ? 'video' : 'image', u: j.secure_url };
 }
 async function buildMedia(){
@@ -243,6 +271,8 @@ async function buildMedia(){
 
 // ---- Listing actions ----
 $('list').addEventListener('click', async e => {
+  const rb = e.target.closest('button[data-rep]');
+  if (rb){ repId = rb.dataset.rep; $('rpForm').reset(); $('rpd').showModal(); return; }
   const z = e.target.closest('img[data-zoom]');
   if (z){ $('lb').querySelector('img').src = z.src; $('lb').hidden = false; return; }
   const b = e.target.closest('button[data-act]'); if (!b || !db) return;
@@ -269,9 +299,27 @@ $('form').addEventListener('submit', async e => {
     });
     e.target.reset(); picked = []; preview(); setTab('find'); window.scrollTo(0, 0);
   } catch (err) {
-    alert('Imeshindikana kuweka tangazo. Angalia mtandao au ukubwa wa faili, kisha jaribu tena.');
+    console.error(err);
+    const m = String((err && err.message) || err);
+    alert('Imeshindikana kuweka tangazo.\n\nSababu: ' + (m.startsWith('Cloudinary') ? m : ((err && err.code) || m)));
   } finally { btn.disabled = false; btn.textContent = 'Weka tangazo'; }
 });
+
+// ---- Ripoti ----
+$('rp_cancel').onclick = () => $('rpd').close();
+$('rpForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!db || !uid || !repId){ alert('Subiri kidogo, bado inaunganisha...'); return; }
+  const b = $('rp_send'); b.disabled = true;
+  try {
+    await setDoc(doc(db, 'reports', repId + '_' + uid), { listingId: repId, reason: $('rp_why').value, note: $('rp_note').value.trim().slice(0, 300), reporterId: uid, date: Date.now() });
+    $('rpd').close(); alert('Asante. Tumepokea ripoti yako.');
+  } catch (err) {
+    console.error(err);
+    alert('Imeshindikana kutuma ripoti. Huenda umesharipoti tangazo hili.');
+  } finally { b.disabled = false; }
+});
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 
 // ---- Firebase ----
 try {
