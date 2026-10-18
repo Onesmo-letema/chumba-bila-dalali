@@ -58,11 +58,21 @@ label{display:block;font-size:.9rem;color:var(--mu);margin:10px 0 4px}
 dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);width:min(92vw,420px);padding:16px}
 dialog::backdrop{background:rgba(0,0,0,.6)}
 dialog h2{font-size:1.1rem;margin:0 0 4px}
+#gate{position:fixed;inset:0;z-index:20;background:var(--bg);overflow:auto;padding:max(16px,env(safe-area-inset-top)) 16px 24px}
+#gate .in{max-width:420px;margin:0 auto}
+.role{display:block;width:100%;text-align:left;padding:14px;margin-bottom:10px;border:2px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);font:inherit;cursor:pointer}
+.role b{display:block;font-size:1.05rem}
+.role.sel{border-color:var(--pr);background:var(--pr2)}
+.err{color:var(--wn);min-height:1.3em;font-size:.9rem;margin:6px 0}
+.link{background:none;border:0;color:var(--pr);padding:8px 0;cursor:pointer;font:inherit}
+.who{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.85rem;color:var(--mu)}
+.btn.full{width:100%;text-align:center;margin-top:8px}
 [hidden]{display:none!important}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="who" id="who" hidden><span id="whoTxt"></span><button class="link" id="logout" type="button">Toka</button></div>
   <h1>🏠 Chumba Bila Dalali</h1>
   <p class="sub">Tafuta chumba cha kupanga moja kwa moja kwa mwenye nyumba.</p>
 
@@ -143,11 +153,43 @@ dialog h2{font-size:1.1rem;margin:0 0 4px}
   </form>
 </dialog>
 <div id="lb" hidden><img alt=""></div>
+<div id="gate"><div class="in">
+  <div style="font-size:42px;margin-top:16px">🏠</div>
+  <h1>Karibu Chumba Bila Dalali</h1>
+  <p class="sub" id="g-load">Inapakia...</p>
+  <div id="g-role" hidden>
+    <p class="sub">Wewe ni nani? Chagua mmoja:</p>
+    <button class="role" type="button" data-role="mpangaji"><b>🔎 Mpangaji</b>Natafuta chumba cha kupanga</button>
+    <button class="role" type="button" data-role="mwenye_nyumba"><b>🏡 Mwenye nyumba</b>Nina chumba au nyumba ya kupangisha</button>
+    <div class="err" id="e-role"></div>
+    <button class="btn full" type="button" id="g-next">Endelea</button>
+  </div>
+  <div id="g-auth" hidden>
+    <p class="sub">Ingia kwa njia moja wapo:</p>
+    <div class="tabs">
+      <button class="tab on" type="button" data-tab="phone">📱 Namba ya simu</button>
+      <button class="tab" type="button" data-tab="google">✉️ Gmail</button>
+    </div>
+    <div id="t-phone">
+      <input id="i-phone" type="tel" inputmode="tel" placeholder="mf. 0712 345 678">
+      <button class="btn full" type="button" id="b-send">Tuma namba ya uthibitisho (SMS)</button>
+      <div id="c-code" hidden style="margin-top:10px">
+        <input id="i-code" inputmode="numeric" maxlength="6" placeholder="Namba ya tarakimu 6">
+        <button class="btn full" type="button" id="b-verify">Thibitisha</button>
+      </div>
+    </div>
+    <div id="t-google" hidden>
+      <button class="btn full" type="button" id="b-google">Ingia na Google (Gmail)</button>
+    </div>
+    <div class="err" id="e-auth"></div>
+    <button class="link" type="button" id="g-back">← Rudi kuchagua aina</button>
+  </div>
+</div></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, linkWithPopup, signInWithCredential, RecaptchaVerifier, signInWithPhoneNumber, linkWithPhoneNumber, PhoneAuthProvider } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getFirestore, getDoc, serverTimestamp, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAtaZtwsfGuiNZtZbF6oYoR13C_9jwvyn4",
@@ -327,22 +369,130 @@ $('rpForm').addEventListener('submit', async e => {
 });
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 
-// ---- Firebase ----
-try {
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  db = getFirestore(app);
-  onAuthStateChanged(auth, u => {
-    if (u){ uid = u.uid; render(); }
-    else signInAnonymously(auth).catch(() => note('Imeshindikana kuingia. Washa "Anonymous" kwenye Firebase Authentication.'));
-  });
-  onSnapshot(query(collection(db, 'listings'), orderBy('date', 'desc')), snap => {
+// ---- Firebase + Kuingia ----
+const ROLES = { mpangaji: 'Mpangaji', mwenye_nyumba: 'Mwenye nyumba' };
+const MSG = {
+  'auth/invalid-phone-number': 'Namba ya simu si sahihi.',
+  'auth/invalid-verification-code': 'Namba ya uthibitisho si sahihi.',
+  'auth/code-expired': 'Namba imeisha muda. Omba nyingine.',
+  'auth/too-many-requests': 'Umejaribu mara nyingi. Subiri kidogo kisha ujaribu tena.',
+  'auth/popup-closed-by-user': 'Dirisha la Google lilifungwa.',
+  'auth/unauthorized-domain': 'Domain hii haijaruhusiwa kwenye Firebase (Authorized domains).',
+  'auth/operation-not-allowed': 'Njia hii ya kuingia haijawashwa kwenye Firebase.',
+  'auth/network-request-failed': 'Hakuna mtandao. Jaribu tena.'
+};
+const em = e => MSG[e && e.code] || 'Hitilafu imetokea. Jaribu tena.';
+let auth = null, role = null, pendingRole = null, confirmation = null, verifier = null, handling = null, unsub = null;
+const roleBtns = [...document.querySelectorAll('#g-role .role')];
+const gStep = s => { ['g-load','g-role','g-auth'].forEach(x => $(x).hidden = x !== s); $('gate').hidden = !s; };
+
+function startListings(){
+  if (unsub) return;
+  unsub = onSnapshot(query(collection(db, 'listings'), orderBy('date', 'desc')), snap => {
     items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     note(items.length + ' matangazo. Yanaonekana kwa kila mtumiaji.');
     render();
   }, () => note('Imeshindikana kusoma matangazo. Angalia Firestore rules na config.'));
+}
+function enter(user, r){
+  role = r; uid = user.uid;
+  $('whoTxt').textContent = ROLES[r] + (user.phoneNumber || user.email ? ' · ' + (user.phoneNumber || user.email) : '');
+  $('who').hidden = false;
+  $('tabAdd').hidden = r !== 'mwenye_nyumba';
+  if (r !== 'mwenye_nyumba') setTab('find');
+  gStep(null); startListings(); render();
+}
+async function afterAuth(user){
+  if (handling === user.uid) return;
+  handling = user.uid;
+  try {
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (snap.exists() && ROLES[snap.data().role]) return enter(user, snap.data().role);
+    if (pendingRole){
+      await setDoc(doc(db, 'users', user.uid), { role: pendingRole, phone: user.phoneNumber || null, email: user.email || null, createdAt: serverTimestamp() }, { merge: true });
+      return enter(user, pendingRole);
+    }
+    gStep('g-role');   // ameingia lakini hajachagua aina
+  } catch (err) {
+    console.error(err); handling = null;
+    $('e-role').textContent = 'Imeshindikana kuhifadhi akaunti. Angalia mtandao na Firestore rules.'; gStep('g-role');
+  }
+}
+
+roleBtns.forEach(b => b.onclick = () => {
+  pendingRole = b.dataset.role; $('e-role').textContent = '';
+  roleBtns.forEach(x => x.classList.toggle('sel', x === b));
+});
+$('g-next').onclick = () => {
+  if (!pendingRole){ $('e-role').textContent = 'Tafadhali chagua aina kwanza.'; return; }
+  const cu = auth && auth.currentUser;
+  if (cu && !cu.isAnonymous) afterAuth(cu); else gStep('g-auth');
+};
+$('g-back').onclick = () => gStep('g-role');
+document.querySelectorAll('#g-auth .tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('#g-auth .tab').forEach(x => x.classList.toggle('on', x === t));
+  $('t-phone').hidden = t.dataset.tab !== 'phone'; $('t-google').hidden = t.dataset.tab !== 'google';
+  $('e-auth').textContent = '';
+});
+$('logout').onclick = () => { if (auth) signOut(auth); };
+
+$('b-send').onclick = async () => {
+  const btn = $('b-send'); $('e-auth').textContent = '';
+  const d = normPhone($('i-phone').value);
+  if (d.length !== 12){ $('e-auth').textContent = 'Weka namba sahihi ya simu, mf. 0712 345 678'; return; }
+  btn.disabled = true;
+  try {
+    if (!verifier) verifier = new RecaptchaVerifier(auth, 'b-send', { size: 'invisible' });
+    const cu = auth.currentUser;
+    confirmation = (cu && cu.isAnonymous) ? await linkWithPhoneNumber(cu, '+' + d, verifier) : await signInWithPhoneNumber(auth, '+' + d, verifier);
+    $('c-code').hidden = false; $('i-code').focus();
+  } catch (e) {
+    $('e-auth').textContent = em(e);
+    try { verifier && verifier.clear(); } catch (_) {} verifier = null;
+  }
+  btn.disabled = false;
+};
+$('b-verify').onclick = async () => {
+  $('e-auth').textContent = '';
+  try {
+    await confirmation.confirm($('i-code').value.trim());
+    if (auth.currentUser && !auth.currentUser.isAnonymous) afterAuth(auth.currentUser);
+  } catch (e) {
+    if (e.code === 'auth/credential-already-in-use'){
+      try { await signInWithCredential(auth, PhoneAuthProvider.credentialFromError(e)); } catch (e2) { $('e-auth').textContent = em(e2); }
+    } else $('e-auth').textContent = em(e);
+  }
+};
+$('b-google').onclick = async () => {
+  $('e-auth').textContent = '';
+  const cu = auth.currentUser, prov = new GoogleAuthProvider();
+  try {
+    if (cu && cu.isAnonymous){
+      try { await linkWithPopup(cu, prov); afterAuth(auth.currentUser); }
+      catch (e) {
+        if (e.code === 'auth/credential-already-in-use') await signInWithCredential(auth, GoogleAuthProvider.credentialFromError(e));
+        else throw e;
+      }
+    } else await signInWithPopup(auth, prov);
+  } catch (e) { $('e-auth').textContent = em(e); }
+};
+
+try {
+  const app = initializeApp(firebaseConfig);
+  auth = getAuth(app); auth.languageCode = 'sw';
+  db = getFirestore(app);
+  onAuthStateChanged(auth, u => {
+    if (u && !u.isAnonymous){ afterAuth(u); return; }
+    // hajaingia: onyesha ukurasa wa kuingia
+    handling = null; uid = null; role = null; pendingRole = null;
+    roleBtns.forEach(x => x.classList.remove('sel'));
+    if (unsub){ unsub(); unsub = null; items = []; }
+    $('who').hidden = true; $('c-code').hidden = true;
+    gStep('g-role');
+  });
 } catch (err) {
   note('Hitilafu ya kuanzisha Firebase. Angalia firebaseConfig.');
+  gStep('g-role');
 }
 render();
 </script>
