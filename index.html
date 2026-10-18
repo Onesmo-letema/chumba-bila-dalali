@@ -157,15 +157,21 @@ dialog h2{font-size:1.1rem;margin:0 0 4px}
   <div style="font-size:42px;margin-top:16px">🏠</div>
   <h1>Karibu Chumba Bila Dalali</h1>
   <p class="sub" id="g-load">Inapakia...</p>
+  <div id="g-start" hidden>
+    <p class="sub">Karibu! Chagua:</p>
+    <button class="role" type="button" id="m-in"><b>Ingia</b>Nina akaunti tayari</button>
+    <button class="role" type="button" id="m-up"><b>Jisajili</b>Mimi ni mpya, nataka kujisajili</button>
+  </div>
   <div id="g-role" hidden>
     <p class="sub">Wewe ni nani? Chagua mmoja:</p>
     <button class="role" type="button" data-role="mpangaji"><b>🔎 Mpangaji</b>Natafuta chumba cha kupanga</button>
     <button class="role" type="button" data-role="mwenye_nyumba"><b>🏡 Mwenye nyumba</b>Nina chumba au nyumba ya kupangisha</button>
     <div class="err" id="e-role"></div>
     <button class="btn full" type="button" id="g-next">Endelea</button>
+    <button class="link" type="button" id="g-back0">← Rudi</button>
   </div>
   <div id="g-auth" hidden>
-    <p class="sub">Ingia kwa akaunti yako ya Gmail:</p>
+    <p class="sub" id="g-auth-sub"></p>
     <div id="t-google">
       <button class="btn full" type="button" id="b-google">Ingia na Google (Gmail)</button>
     </div>
@@ -371,8 +377,9 @@ const MSG = {
 };
 const em = e => MSG[e && e.code] || 'Hitilafu imetokea. Jaribu tena.';
 let auth = null, role = null, pendingRole = null, handling = null, unsub = null;
+let mode = null;
 const roleBtns = [...document.querySelectorAll('#g-role .role')];
-const gStep = s => { ['g-load','g-role','g-auth'].forEach(x => $(x).hidden = x !== s); $('gate').hidden = !s; };
+const gStep = s => { ['g-load','g-start','g-role','g-auth'].forEach(x => $(x).hidden = x !== s); $('gate').hidden = !s; };
 
 function startListings(){
   if (unsub) return;
@@ -400,6 +407,7 @@ async function afterAuth(user){
       await setDoc(doc(db, 'users', user.uid), { role: pendingRole, phone: user.phoneNumber || null, email: user.email || null, createdAt: serverTimestamp() }, { merge: true });
       return enter(user, pendingRole);
     }
+    $('e-role').textContent = 'Huna akaunti bado. Chagua aina yako kukamilisha usajili.';
     gStep('g-role');   // ameingia lakini hajachagua aina
   } catch (err) {
     console.error(err); handling = null;
@@ -414,9 +422,20 @@ roleBtns.forEach(b => b.onclick = () => {
 $('g-next').onclick = () => {
   if (!pendingRole){ $('e-role').textContent = 'Tafadhali chagua aina kwanza.'; return; }
   const cu = auth && auth.currentUser;
-  if (cu && !cu.isAnonymous) afterAuth(cu); else gStep('g-auth');
+  if (cu && !cu.isAnonymous) afterAuth(cu); else showAuth();
 };
-$('g-back').onclick = () => gStep('g-role');
+function showAuth(){
+  $('g-auth-sub').textContent = mode === 'up' ? 'Jisajili kwa akaunti yako ya Gmail:' : 'Ingia kwa akaunti yako ya Gmail:';
+  $('b-google').textContent = (mode === 'up' ? 'Jisajili' : 'Ingia') + ' na Google (Gmail)';
+  $('e-auth').textContent = ''; gStep('g-auth');
+}
+$('m-in').onclick = () => { mode = 'in'; showAuth(); };
+$('m-up').onclick = () => { mode = 'up'; $('e-role').textContent = ''; gStep('g-role'); };
+$('g-back').onclick = () => gStep(mode === 'up' ? 'g-role' : 'g-start');
+$('g-back0').onclick = () => {
+  const cu = auth && auth.currentUser;
+  if (cu && !cu.isAnonymous) signOut(auth); else gStep('g-start');
+};
 $('logout').onclick = () => { if (auth) signOut(auth); };
 
 $('b-google').onclick = async () => {
@@ -443,12 +462,12 @@ try {
     handling = null; uid = null; role = null; pendingRole = null;
     roleBtns.forEach(x => x.classList.remove('sel'));
     if (unsub){ unsub(); unsub = null; items = []; }
-    $('who').hidden = true;
-    gStep('g-role');
+    $('who').hidden = true; mode = null;
+    gStep('g-start');
   });
 } catch (err) {
   note('Hitilafu ya kuanzisha Firebase. Angalia firebaseConfig.');
-  gStep('g-role');
+  gStep('g-start');
 }
 render();
 </script>
