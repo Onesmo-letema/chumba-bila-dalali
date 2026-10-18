@@ -67,6 +67,10 @@ dialog h2{font-size:1.1rem;margin:0 0 4px}
 .link{background:none;border:0;color:var(--pr);padding:8px 0;cursor:pointer;font:inherit}
 .who{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.85rem;color:var(--mu)}
 .btn.full{width:100%;text-align:center;margin-top:8px}
+#gate input{margin-bottom:8px}
+#gate .chk{display:flex;align-items:center;gap:6px;margin:0 0 4px;color:var(--mu)}
+#gate .chk input{width:auto;margin:0}
+#gate .or{text-align:center;color:var(--mu);margin:10px 0 2px;font-size:.9rem}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -172,17 +176,23 @@ dialog h2{font-size:1.1rem;margin:0 0 4px}
   </div>
   <div id="g-auth" hidden>
     <p class="sub" id="g-auth-sub"></p>
-    <div id="t-google">
-      <button class="btn full" type="button" id="b-google">Ingia na Google (Gmail)</button>
-    </div>
+    <form id="f-auth" novalidate>
+      <input id="i-email" type="email" name="email" autocomplete="username" inputmode="email" placeholder="Email yako" required>
+      <input id="i-pass" type="password" name="password" autocomplete="current-password" placeholder="Nywila (herufi 6 au zaidi)" required>
+      <label class="chk"><input type="checkbox" id="c-show"> Onyesha nywila</label>
+      <button class="btn full" type="submit" id="b-email">Ingia</button>
+    </form>
+    <button class="link" type="button" id="b-reset">Umesahau nywila?</button>
+    <div class="or">— au —</div>
+    <button class="btn alt full" type="button" id="b-google">Ingia na Google (Gmail)</button>
     <div class="err" id="e-auth"></div>
-    <button class="link" type="button" id="g-back">← Rudi kuchagua aina</button>
+    <button class="link" type="button" id="g-back">← Rudi</button>
   </div>
 </div></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, linkWithPopup, signInWithCredential } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, linkWithPopup, signInWithCredential, createUserWithEmailAndPassword, signInWithEmailAndPassword, EmailAuthProvider, linkWithCredential, sendPasswordResetEmail, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirestore, getDoc, serverTimestamp, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -373,7 +383,14 @@ const MSG = {
   'auth/popup-closed-by-user': 'Dirisha la Google lilifungwa.',
   'auth/unauthorized-domain': 'Domain hii haijaruhusiwa kwenye Firebase (Authorized domains).',
   'auth/operation-not-allowed': 'Njia hii ya kuingia haijawashwa kwenye Firebase.',
-  'auth/network-request-failed': 'Hakuna mtandao. Jaribu tena.'
+  'auth/network-request-failed': 'Hakuna mtandao. Jaribu tena.',
+  'auth/invalid-email': 'Email si sahihi.',
+  'auth/email-already-in-use': 'Email hii tayari imesajiliwa. Bonyeza Rudi kisha Ingia (au tumia Google kama ulijisajili kwa Google).',
+  'auth/weak-password': 'Nywila iwe na herufi 6 au zaidi.',
+  'auth/invalid-credential': 'Email au nywila si sahihi.',
+  'auth/wrong-password': 'Email au nywila si sahihi.',
+  'auth/user-not-found': 'Email hii haijasajiliwa. Bonyeza Rudi kisha Jisajili.',
+  'auth/missing-password': 'Weka nywila.'
 };
 const em = e => MSG[e && e.code] || 'Hitilafu imetokea. Jaribu tena.';
 let auth = null, role = null, pendingRole = null, handling = null, unsub = null;
@@ -411,7 +428,7 @@ async function afterAuth(user){
     gStep('g-role');   // ameingia lakini hajachagua aina
   } catch (err) {
     console.error(err); handling = null;
-    $('e-role').textContent = 'Imeshindikana kuhifadhi akaunti. Angalia mtandao na Firestore rules.'; gStep('g-role');
+    $('e-role').textContent = 'Imeshindikana kuhifadhi akaunti (' + ((err && err.code) || 'hitilafu') + '). Angalia mtandao na Firestore rules.'; gStep('g-role');
   }
 }
 
@@ -424,11 +441,40 @@ $('g-next').onclick = () => {
   const cu = auth && auth.currentUser;
   if (cu && !cu.isAnonymous) afterAuth(cu); else showAuth();
 };
+function authMsg(t, ok){ const el = $('e-auth'); el.textContent = t || ''; el.style.color = ok ? 'var(--pr)' : ''; }
 function showAuth(){
-  $('g-auth-sub').textContent = mode === 'up' ? 'Jisajili kwa akaunti yako ya Gmail:' : 'Ingia kwa akaunti yako ya Gmail:';
-  $('b-google').textContent = (mode === 'up' ? 'Jisajili' : 'Ingia') + ' na Google (Gmail)';
-  $('e-auth').textContent = ''; gStep('g-auth');
+  const up = mode === 'up';
+  $('g-auth-sub').textContent = up ? 'Jisajili kwa Email na nywila:' : 'Ingia kwa Email na nywila:';
+  $('b-email').textContent = up ? 'Jisajili' : 'Ingia';
+  $('b-google').textContent = (up ? 'Jisajili' : 'Ingia') + ' na Google (Gmail)';
+  $('i-pass').autocomplete = up ? 'new-password' : 'current-password';
+  $('b-reset').hidden = up;
+  try { const m = localStorage.getItem('cbd_email'); if (m && !$('i-email').value) $('i-email').value = m; } catch (_) {}
+  authMsg(''); gStep('g-auth');
 }
+$('c-show').onchange = e => { $('i-pass').type = e.target.checked ? 'text' : 'password'; };
+$('f-auth').addEventListener('submit', async e => {
+  e.preventDefault(); authMsg('');
+  const email = $('i-email').value.trim(), pw = $('i-pass').value;
+  if (!email || !pw){ authMsg('Weka Email na nywila.'); return; }
+  const btn = $('b-email'); btn.disabled = true;
+  try {
+    const cu = auth.currentUser;
+    if (mode === 'up'){
+      if (cu && cu.isAnonymous){ await linkWithCredential(cu, EmailAuthProvider.credential(email, pw)); afterAuth(auth.currentUser); }
+      else await createUserWithEmailAndPassword(auth, email, pw);
+    } else await signInWithEmailAndPassword(auth, email, pw);
+    try { localStorage.setItem('cbd_email', email); } catch (_) {}
+    try { if (window.PasswordCredential) await navigator.credentials.store(new PasswordCredential({ id: email, password: pw })); } catch (_) {}
+  } catch (err) { authMsg(em(err)); }
+  btn.disabled = false;
+});
+$('b-reset').onclick = async () => {
+  const email = $('i-email').value.trim();
+  if (!email){ authMsg('Andika Email yako kwanza.'); return; }
+  try { await sendPasswordResetEmail(auth, email); authMsg('Tumekutumia ujumbe wa kubadilisha nywila kwenye Email yako. Angalia pia Spam.', true); }
+  catch (err) { authMsg(em(err)); }
+};
 $('m-in').onclick = () => { mode = 'in'; showAuth(); };
 $('m-up').onclick = () => { mode = 'up'; $('e-role').textContent = ''; gStep('g-role'); };
 $('g-back').onclick = () => gStep(mode === 'up' ? 'g-role' : 'g-start');
@@ -439,7 +485,7 @@ $('g-back0').onclick = () => {
 $('logout').onclick = () => { if (auth) signOut(auth); };
 
 $('b-google').onclick = async () => {
-  $('e-auth').textContent = '';
+  authMsg('');
   const cu = auth.currentUser, prov = new GoogleAuthProvider();
   try {
     if (cu && cu.isAnonymous){
@@ -449,12 +495,13 @@ $('b-google').onclick = async () => {
         else throw e;
       }
     } else await signInWithPopup(auth, prov);
-  } catch (e) { $('e-auth').textContent = em(e); }
+  } catch (e) { authMsg(em(e)); }
 };
 
 try {
   const app = initializeApp(firebaseConfig);
   auth = getAuth(app); auth.languageCode = 'sw';
+  setPersistence(auth, browserLocalPersistence).catch(() => {});
   db = getFirestore(app);
   onAuthStateChanged(auth, u => {
     if (u && !u.isAnonymous){ afterAuth(u); return; }
@@ -462,7 +509,7 @@ try {
     handling = null; uid = null; role = null; pendingRole = null;
     roleBtns.forEach(x => x.classList.remove('sel'));
     if (unsub){ unsub(); unsub = null; items = []; }
-    $('who').hidden = true; mode = null;
+    $('who').hidden = true; mode = null; $('i-pass').value = '';
     gStep('g-start');
   });
 } catch (err) {
