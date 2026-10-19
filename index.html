@@ -192,6 +192,7 @@ dialog h2{font-size:1.1rem;margin:0 0 4px}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check.js";
 import { getAuth, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, linkWithPopup, signInWithCredential, createUserWithEmailAndPassword, signInWithEmailAndPassword, EmailAuthProvider, linkWithCredential, sendPasswordResetEmail, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirestore, getDoc, serverTimestamp, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
@@ -500,6 +501,7 @@ $('b-google').onclick = async () => {
 
 try {
   const app = initializeApp(firebaseConfig);
+  try { initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider('6LdyYvYtAAAAAHKl58NzRaMC5HexstPjRgAw3Zr9'), isTokenAutoRefreshEnabled: true }); } catch (e) { console.warn('App Check:', e); }
   auth = getAuth(app); auth.languageCode = 'sw';
   setPersistence(auth, browserLocalPersistence).catch(() => {});
   db = getFirestore(app);
