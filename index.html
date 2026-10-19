@@ -58,19 +58,52 @@ label{display:block;font-size:.9rem;color:var(--mu);margin:10px 0 4px}
 dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);width:min(92vw,420px);padding:16px}
 dialog::backdrop{background:rgba(0,0,0,.6)}
 dialog h2{font-size:1.1rem;margin:0 0 4px}
-#gate{position:fixed;inset:0;z-index:20;background:var(--bg);overflow:auto;padding:max(16px,env(safe-area-inset-top)) 16px 24px}
-#gate .in{max-width:420px;margin:0 auto}
-.role{display:block;width:100%;text-align:left;padding:14px;margin-bottom:10px;border:2px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);font:inherit;cursor:pointer}
-.role b{display:block;font-size:1.05rem}
-.role.sel{border-color:var(--pr);background:var(--pr2)}
-.err{color:var(--wn);min-height:1.3em;font-size:.9rem;margin:6px 0}
 .link{background:none;border:0;color:var(--pr);padding:8px 0;cursor:pointer;font:inherit}
 .who{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.85rem;color:var(--mu)}
-.btn.full{width:100%;text-align:center;margin-top:8px}
-#gate input{margin-bottom:8px}
-#gate .chk{display:flex;align-items:center;gap:6px;margin:0 0 4px;color:var(--mu)}
-#gate .chk input{width:auto;margin:0}
-#gate .or{text-align:center;color:var(--mu);margin:10px 0 2px;font-size:.9rem}
+#gate{position:fixed;inset:0;z-index:20;overflow:auto;color:#fff;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:radial-gradient(900px 500px at 50% -10%,rgba(63,185,124,.32) 0%,transparent 65%),linear-gradient(180deg,#0f2218 0%,#070e0a 100%)}
+#g-bar{position:fixed;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.18);z-index:21}
+#g-bar i{display:block;height:100%;width:0;background:#fff;transition:width .35s}
+.g-wrap{min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;
+  padding:calc(env(safe-area-inset-top,0px) + 56px) 20px calc(env(safe-area-inset-bottom,0px) + 20px)}
+.g-brand{font-weight:800;letter-spacing:.04em;font-size:1.2rem;margin-bottom:26px;text-align:center}
+.g-card{width:100%;max-width:440px;box-sizing:border-box;padding:30px 22px 22px;border-radius:28px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.g-h{margin:0;text-align:center;font-size:2.1rem;font-weight:800;line-height:1.15}
+.g-s{margin:8px 0 24px;text-align:center;color:#b4cdbf;font-size:1rem}
+.g-lab{display:block;margin:14px 6px 8px;color:#9fb8a8;font-size:.95rem}
+.g-field{position:relative}
+.g-field input{width:100%;box-sizing:border-box;height:56px;padding:0 54px 0 18px;border-radius:18px;
+  background:#14281d;color:#fff;border:1.5px solid rgba(255,255,255,.35);font-size:1rem;margin:0;outline:none}
+.g-field input::placeholder{color:#6f8c7b}
+.g-field input:focus{border-color:#7ee2a8}
+.g-field svg,.g-field button{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:24px;height:24px;color:#9fc2ae}
+.g-field button{background:none;border:0;padding:0;cursor:pointer;right:16px}
+.g-field button svg{position:static;transform:none}
+#gate .g-btn{display:block;width:100%;box-sizing:border-box;margin-top:22px;height:56px;border:0;border-radius:18px;
+  background:linear-gradient(135deg,#3fb97c,#1f7a4d);color:#fff;font-size:1.1rem;font-weight:700;cursor:pointer}
+#gate .g-btn.ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.4);margin-top:14px}
+#gate .g-btn:disabled{opacity:.55}
+.g-row{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:18px;flex-wrap:nowrap}
+.g-sep{width:1px;height:26px;background:rgba(255,255,255,.2)}
+#gate .g-link{background:none;border:0;color:#7fd8a8;font:inherit;font-size:.92rem;cursor:pointer;padding:8px 4px}
+#gate .g-link.center{display:block;margin:6px auto 0}
+.g-chk{display:flex;align-items:center;gap:8px;color:#7fd8a8;font-size:.92rem;cursor:pointer;white-space:nowrap}
+.g-chk input{appearance:none;-webkit-appearance:none;width:24px;height:24px;margin:0;border-radius:7px;
+  border:1.5px solid rgba(255,255,255,.45);background:transparent;position:relative;cursor:pointer}
+.g-chk input:checked{background:#3fb97c;border-color:#3fb97c}
+.g-chk input:checked::after{content:"";position:absolute;left:7px;top:2px;width:6px;height:12px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.g-or{display:flex;align-items:center;gap:12px;margin:22px 0 0;color:#86a493;font-size:.9rem}
+.g-or::before,.g-or::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.18)}
+.g-err{min-height:1.3em;margin:10px 4px 0;color:#ff8f86;font-size:.92rem;text-align:center}
+#gate .role{display:block;width:100%;box-sizing:border-box;text-align:left;margin:0 0 12px;padding:16px 18px;
+  border-radius:18px;background:#14281d;color:#b4cdbf;border:1.5px solid rgba(255,255,255,.3);font:inherit;font-size:.95rem;cursor:pointer}
+#gate .role b{display:block;color:#fff;font-size:1.1rem;margin-bottom:3px}
+#gate .role.sel{border-color:#3fb97c;background:#17382a}
+.g-foot{width:100%;max-width:440px;margin-top:auto;padding-top:28px;text-align:center;color:#86a493;font-size:.9rem}
+.g-foot div{border-top:1px solid rgba(255,255,255,.12);padding-top:16px}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -157,38 +190,57 @@ dialog h2{font-size:1.1rem;margin:0 0 4px}
   </form>
 </dialog>
 <div id="lb" hidden><img alt=""></div>
-<div id="gate"><div class="in">
-  <div style="font-size:42px;margin-top:16px">🏠</div>
-  <h1>Karibu Chumba Bila Dalali</h1>
-  <p class="sub" id="g-load">Inapakia...</p>
-  <div id="g-start" hidden>
-    <p class="sub">Karibu! Chagua:</p>
-    <button class="role" type="button" id="m-in"><b>Ingia</b>Nina akaunti tayari</button>
-    <button class="role" type="button" id="m-up"><b>Jisajili</b>Mimi ni mpya, nataka kujisajili</button>
+<div id="gate">
+<div id="g-bar"><i></i></div>
+<div class="g-wrap">
+  <div class="g-brand">🏠 CHUMBA BILA DALALI</div>
+  <div class="g-card">
+    <div id="g-load"><h2 class="g-h">Inapakia...</h2></div>
+    <div id="g-start" hidden>
+      <h2 class="g-h">Karibu</h2>
+      <p class="g-s">Tafuta chumba cha kupanga moja kwa moja kwa mwenye nyumba.</p>
+      <button class="g-btn" type="button" id="m-in">Ingia</button>
+      <button class="g-btn ghost" type="button" id="m-up">Jisajili</button>
+    </div>
+    <div id="g-role" hidden>
+      <h2 class="g-h">Wewe ni nani?</h2>
+      <p class="g-s">Chagua aina yako</p>
+      <button class="role" type="button" data-role="mpangaji"><b>🔎 Mpangaji</b>Natafuta chumba cha kupanga</button>
+      <button class="role" type="button" data-role="mwenye_nyumba"><b>🏡 Mwenye nyumba</b>Nina chumba au nyumba ya kupangisha</button>
+      <div class="g-err" id="e-role"></div>
+      <button class="g-btn" type="button" id="g-next" style="margin-top:8px">Endelea</button>
+      <button class="g-link center" type="button" id="g-back0">← Rudi</button>
+    </div>
+    <div id="g-auth" hidden>
+      <h2 class="g-h" id="g-auth-h"></h2>
+      <p class="g-s" id="g-auth-sub"></p>
+      <form id="f-auth" novalidate>
+        <label class="g-lab" for="i-email">Email</label>
+        <div class="g-field">
+          <input id="i-email" type="email" name="email" autocomplete="username" inputmode="email" placeholder="jina@gmail.com" required>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 8 8 6 8-6"/></svg>
+        </div>
+        <label class="g-lab" for="i-pass">Nywila</label>
+        <div class="g-field">
+          <input id="i-pass" type="password" name="password" autocomplete="current-password" placeholder="Herufi 6 au zaidi" required>
+          <button type="button" id="eye" aria-label="Onyesha au ficha nywila"><svg id="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg id="eye-off" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.4 6.4C3.6 8.2 2 12 2 12s3.6 7 10 7c1.6 0 3-.4 4.3-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button>
+        </div>
+        <button class="g-btn" type="submit" id="b-email">Ingia</button>
+      </form>
+      <div class="g-row">
+        <button class="g-link" type="button" id="b-reset">Rudisha nywila</button>
+        <span class="g-sep" id="g-sep"></span>
+        <label class="g-chk"><input type="checkbox" id="c-rem" checked><span>Kumbuka email</span></label>
+      </div>
+      <div class="g-or">au</div>
+      <button class="g-btn ghost" type="button" id="b-google">Ingia na Google (Gmail)</button>
+      <div class="g-err" id="e-auth"></div>
+      <button class="g-link center" type="button" id="g-back">← Rudi</button>
+    </div>
   </div>
-  <div id="g-role" hidden>
-    <p class="sub">Wewe ni nani? Chagua mmoja:</p>
-    <button class="role" type="button" data-role="mpangaji"><b>🔎 Mpangaji</b>Natafuta chumba cha kupanga</button>
-    <button class="role" type="button" data-role="mwenye_nyumba"><b>🏡 Mwenye nyumba</b>Nina chumba au nyumba ya kupangisha</button>
-    <div class="err" id="e-role"></div>
-    <button class="btn full" type="button" id="g-next">Endelea</button>
-    <button class="link" type="button" id="g-back0">← Rudi</button>
-  </div>
-  <div id="g-auth" hidden>
-    <p class="sub" id="g-auth-sub"></p>
-    <form id="f-auth" novalidate>
-      <input id="i-email" type="email" name="email" autocomplete="username" inputmode="email" placeholder="Email yako" required>
-      <input id="i-pass" type="password" name="password" autocomplete="current-password" placeholder="Nywila (herufi 6 au zaidi)" required>
-      <label class="chk"><input type="checkbox" id="c-show"> Onyesha nywila</label>
-      <button class="btn full" type="submit" id="b-email">Ingia</button>
-    </form>
-    <button class="link" type="button" id="b-reset">Umesahau nywila?</button>
-    <div class="or">— au —</div>
-    <button class="btn alt full" type="button" id="b-google">Ingia na Google (Gmail)</button>
-    <div class="err" id="e-auth"></div>
-    <button class="link" type="button" id="g-back">← Rudi</button>
-  </div>
-</div></div>
+  <div class="g-foot"><div>© 2026 Chumba Bila Dalali</div></div>
+</div>
+
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -397,7 +449,12 @@ const em = e => MSG[e && e.code] || 'Hitilafu imetokea. Jaribu tena.';
 let auth = null, role = null, pendingRole = null, handling = null, unsub = null;
 let mode = null;
 const roleBtns = [...document.querySelectorAll('#g-role .role')];
-const gStep = s => { ['g-load','g-start','g-role','g-auth'].forEach(x => $(x).hidden = x !== s); $('gate').hidden = !s; };
+const PROG = { 'g-load': 10, 'g-start': 25, 'g-role': 50, 'g-auth': 80 };
+const gStep = s => {
+  ['g-load','g-start','g-role','g-auth'].forEach(x => $(x).hidden = x !== s);
+  $('gate').hidden = !s;
+  $('g-bar').firstElementChild.style.width = (s === 'g-auth' && mode !== 'up' ? 65 : (PROG[s] || 0)) + '%';
+};
 
 function startListings(){
   if (unsub) return;
@@ -442,18 +499,23 @@ $('g-next').onclick = () => {
   const cu = auth && auth.currentUser;
   if (cu && !cu.isAnonymous) afterAuth(cu); else showAuth();
 };
-function authMsg(t, ok){ const el = $('e-auth'); el.textContent = t || ''; el.style.color = ok ? 'var(--pr)' : ''; }
+function authMsg(t, ok){ const el = $('e-auth'); el.textContent = t || ''; el.style.color = ok ? '#7ee2a8' : ''; }
 function showAuth(){
   const up = mode === 'up';
-  $('g-auth-sub').textContent = up ? 'Jisajili kwa Email na nywila:' : 'Ingia kwa Email na nywila:';
+  $('g-auth-h').textContent = up ? 'Fungua akaunti' : 'Karibu tena';
+  $('g-auth-sub').textContent = up ? 'Weka Email na nywila mpya' : 'Weka Email na nywila yako';
   $('b-email').textContent = up ? 'Jisajili' : 'Ingia';
   $('b-google').textContent = (up ? 'Jisajili' : 'Ingia') + ' na Google (Gmail)';
   $('i-pass').autocomplete = up ? 'new-password' : 'current-password';
-  $('b-reset').hidden = up;
+  $('b-reset').hidden = up; $('g-sep').hidden = up;
   try { const m = localStorage.getItem('cbd_email'); if (m && !$('i-email').value) $('i-email').value = m; } catch (_) {}
   authMsg(''); gStep('g-auth');
 }
-$('c-show').onchange = e => { $('i-pass').type = e.target.checked ? 'text' : 'password'; };
+$('eye').onclick = () => {
+  const show = $('i-pass').type === 'password';
+  $('i-pass').type = show ? 'text' : 'password';
+  $('eye-on').hidden = show; $('eye-off').hidden = !show;
+};
 $('f-auth').addEventListener('submit', async e => {
   e.preventDefault(); authMsg('');
   const email = $('i-email').value.trim(), pw = $('i-pass').value;
@@ -465,8 +527,8 @@ $('f-auth').addEventListener('submit', async e => {
       if (cu && cu.isAnonymous){ await linkWithCredential(cu, EmailAuthProvider.credential(email, pw)); afterAuth(auth.currentUser); }
       else await createUserWithEmailAndPassword(auth, email, pw);
     } else await signInWithEmailAndPassword(auth, email, pw);
-    try { localStorage.setItem('cbd_email', email); } catch (_) {}
-    try { if (window.PasswordCredential) await navigator.credentials.store(new PasswordCredential({ id: email, password: pw })); } catch (_) {}
+    try { if ($('c-rem').checked) localStorage.setItem('cbd_email', email); else localStorage.removeItem('cbd_email'); } catch (_) {}
+    try { if (window.PasswordCredential && $('c-rem').checked) await navigator.credentials.store(new PasswordCredential({ id: email, password: pw })); } catch (_) {}
   } catch (err) { authMsg(em(err)); }
   btn.disabled = false;
 });
