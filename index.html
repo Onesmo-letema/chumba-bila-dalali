@@ -52,6 +52,7 @@ label{display:block;font-size:.9rem;color:var(--mu);margin:10px 0 4px}
 .checks input{width:auto}
 .empty{text-align:center;color:var(--mu);padding:24px}
 .note{font-size:.8rem;color:var(--mu);margin-top:18px}
+.note a{color:inherit;font-weight:600;text-decoration:underline}
 .gal{display:flex;gap:8px;overflow-x:auto;margin:10px 0}
 .gal img,.gal video{height:150px;max-width:80vw;border-radius:8px;flex:none;object-fit:cover;background:var(--pr2)}
 .gal img{cursor:zoom-in}
@@ -472,7 +473,7 @@ function startListings(){
   if (unsub) return;
   unsub = onSnapshot(query(collection(db, 'listings'), orderBy('date', 'desc')), snap => {
     items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    note(items.length + ' matangazo. Yanaonekana kwa kila mtumiaji.');
+    $('note').innerHTML = 'Kwa msaada piga simu <a href="tel:+255743274284">0743274284</a>';
     render();
   }, () => note('Imeshindikana kusoma matangazo. Angalia Firestore rules na config.'));
 }
