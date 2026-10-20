@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Chumba Bila Dalali</title>
+<!-- Google Analytics: badilisha G-XXXXXXXXXX na Measurement ID yako -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1f7a4d">
 <link rel="icon" href="icon-192.png">
@@ -262,6 +270,7 @@ const useCloud = !!(CLD.cloud && CLD.preset);
 const MAX_FILES = useCloud ? 5 : 3, MAX_VIDEO_MB = 40, MAX_IMG_MB = 15;
 
 const $ = id => document.getElementById(id);
+const track = (name, params) => { try { if (window.gtag) gtag('event', name, params || {}); } catch (_) {} };
 const note = t => { $('note').textContent = t; };
 let items = [], uid = null, db = null, picked = [], repId = null;
 
@@ -373,6 +382,8 @@ async function buildMedia(){
 
 // ---- Listing actions ----
 $('list').addEventListener('click', async e => {
+  const ca = e.target.closest('a.btn[href^="tel:"], a.btn[href*="wa.me"]');
+  if (ca){ track('contact_landlord', { method: ca.getAttribute('href').startsWith('tel:') ? 'call' : 'whatsapp' }); return; }
   const rb = e.target.closest('button[data-rep]');
   if (rb){ repId = rb.dataset.rep; $('rpForm').reset(); $('rpd').showModal(); return; }
   const z = e.target.closest('img[data-zoom]');
@@ -401,6 +412,7 @@ $('form').addEventListener('submit', async e => {
       phone, feat: [...document.querySelectorAll('#a_feat input:checked')].map(c => c.value),
       desc: $('a_desc').value.trim(), media, video, hold: !!video, date: Date.now(), taken: false, ownerId: uid
     });
+    track('post_listing');
     e.target.reset(); picked = []; preview(); setTab('find'); window.scrollTo(0, 0);
     if (video) alert('Tangazo limewekwa. Video itaonekana kwa wengine baada ya kukaguliwa.');
   } catch (err) {
@@ -480,6 +492,7 @@ async function afterAuth(user){
     if (snap.exists() && ROLES[snap.data().role]) return enter(user, snap.data().role);
     if (pendingRole){
       await setDoc(doc(db, 'users', user.uid), { role: pendingRole, phone: user.phoneNumber || null, email: user.email || null, createdAt: serverTimestamp() }, { merge: true });
+      track('sign_up', { role: pendingRole });
       return enter(user, pendingRole);
     }
     $('e-role').textContent = 'Huna akaunti bado. Chagua aina yako kukamilisha usajili.';
